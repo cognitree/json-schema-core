@@ -19,12 +19,9 @@
 
 package com.github.fge.jsonschema.core.util;
 
-import org.mozilla.javascript.Context;
-import org.mozilla.javascript.Function;
-import org.mozilla.javascript.Scriptable;
-
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 /**
  * <p>ECMA 262 validation helper. Rhino is used instead of {@link
@@ -48,57 +45,6 @@ import java.util.regex.Pattern;
 public final class RhinoHelper
 {
     /**
-     * JavaScript scriptlet defining functions {@link #REGEX_IS_VALID}
-     * and {@link #REG_MATCH}
-     */
-    private static final String jsAsString
-        = "function regexIsValid(re)"
-        + '{'
-        + "    try {"
-        + "         new RegExp(re);"
-        + "         return true;"
-        + "    } catch (e) {"
-        + "        return false;"
-        + "    }"
-        + '}'
-        + ""
-        + "function regMatch(re, input)"
-        + '{'
-        + "    return new RegExp(re).test(input);"
-        + '}';
-
-    /**
-     * Script scope
-     */
-    private static final Scriptable SCOPE;
-
-    /**
-     * Reference to Javascript function for regex validation
-     */
-    private static final Function REGEX_IS_VALID;
-
-    /**
-     * Reference to Javascript function for regex matching
-     */
-    private static final Function REG_MATCH;
-
-    private RhinoHelper()
-    {
-    }
-
-    static {
-        final Context ctx = Context.enter();
-        try {
-            SCOPE = ctx.initStandardObjects(null, false);
-            ctx.evaluateString(SCOPE, jsAsString, "re", 1, null);
-            REGEX_IS_VALID = (Function) SCOPE.get("regexIsValid", SCOPE);
-            REG_MATCH = (Function) SCOPE.get("regMatch", SCOPE);
-        } finally {
-            Context.exit();
-        }
-    }
-
-    /**
      * Validate that a regex is correct
      *
      * @param regex the regex to validate
@@ -106,12 +52,11 @@ public final class RhinoHelper
      */
     public static boolean regexIsValid(final String regex)
     {
-        final Context context = Context.enter();
-        try {
-            return (Boolean) REGEX_IS_VALID.call(context, SCOPE, SCOPE,
-                new Object[]{ regex });
-        } finally {
-            Context.exit();
+        try{
+            Pattern.compile(regex);
+            return true;
+        }catch(PatternSyntaxException e){
+            return false;
         }
     }
 
@@ -131,13 +76,6 @@ public final class RhinoHelper
      */
     public static boolean regMatch(final String regex, final String input)
     {
-        final Context context = Context.enter();
-        try {
-            return (Boolean) REG_MATCH.call(context, SCOPE, SCOPE,
-                new Object[]{ regex, input });
-        } finally {
-            Context.exit();
-        }
-
+        return input.matches(regex);
     }
 }
